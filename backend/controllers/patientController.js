@@ -52,19 +52,28 @@ exports.registerPatient = async (req, res) => {
     });
 
     req.session.user = {
-      id: patient._id,
-      role: patient.role,
-    };
+  id: patient._id,
+  role: patient.role,
+};
 
-    res.status(201).json({
-      message: "Patient registered successfully",
-      patient: {
-        id: patient._id,
-        fullName: patient.fullName,
-        email: patient.email,
-        role: patient.role,
-      },
+req.session.save((error) => {
+  if (error) {
+    console.error("Registration session error:", error);
+    return res.status(500).json({
+      message: "Unable to save registration session",
     });
+  }
+
+  res.status(201).json({
+    message: "Patient registered successfully",
+    patient: {
+      id: patient._id,
+      fullName: patient.fullName,
+      email: patient.email,
+      role: patient.role,
+    },
+  });
+});
   } catch (error) {
     console.error("Patient registration error:", error.message);
     res.status(500).json({
@@ -72,6 +81,7 @@ exports.registerPatient = async (req, res) => {
     });
   }
 };
+
 
 // PATIENT LOGIN
 exports.loginPatient = async (req, res) => {
@@ -110,15 +120,25 @@ exports.loginPatient = async (req, res) => {
       role: patient.role,
     };
 
-    res.json({
-      message: "Login successful",
-      patient: {
-        id: patient._id,
-        fullName: patient.fullName,
-        email: patient.email,
-        role: patient.role,
-      },
+    req.session.save((error) => {
+      if (error) {
+        console.error("Session save error:", error);
+        return res.status(500).json({
+          message: "Unable to save login session",
+        });
+      }
+
+      res.json({
+        message: "Login successful",
+        patient: {
+          id: patient._id,
+          fullName: patient.fullName,
+          email: patient.email,
+          role: patient.role,
+        },
+      });
     });
+
   } catch (error) {
     console.error("Patient login error:", error.message);
     res.status(500).json({

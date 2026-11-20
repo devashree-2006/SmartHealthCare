@@ -1,8 +1,9 @@
 
 import React, { useState } from "react";
 import { apiRequest } from "../../services/api";
+import "../../App.css";
 
-function PatientLogin({ onLogin }) {
+function PatientLogin({ onLogin, onGoToRegister }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -27,48 +28,49 @@ function PatientLogin({ onLogin }) {
     }
   };
 
-  
-return (
-  <div className="login-container">
-    <h1>CareSync</h1>
-    <h2>Patient Login</h2>
-    <p>Welcome back! Please log in to continue.</p>
+  return (
+    <div className="login-container">
+      <h1>CareSync</h1>
+      <h2>Patient Login</h2>
+      <p>Welcome back! Please log in to continue.</p>
 
-    <form onSubmit={handleLogin}>
-      <input
-        type="email"
-        placeholder="Enter your email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-      />
+      <form onSubmit={handleLogin}>
+        <input
+          type="email"
+          placeholder="Enter your email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
 
-      <input
-        type="password"
-        placeholder="Enter your password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-      />
+        <input
+          type="password"
+          placeholder="Enter your password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+        {error && (
+          <p style={{ color: "red" }}>{error}</p>
+        )}
 
-      <button type="submit" disabled={loading}>
-        {loading ? "Logging in..." : "Login"}
-      </button>
-    </form>
+        <button type="submit" disabled={loading}>
+          {loading ? "Logging in..." : "Login"}
+        </button>
+      </form>
 
-    <p>
-      Don't have an account?{" "}
-      <button
-        type="button"
-        onClick={onGoToRegister}
-      >
-        Register
-      </button>
-    </p>
-  </div>
-);
+      <p>
+        Don't have an account?{" "}
+        <button
+          type="button"
+          onClick={onGoToRegister}
+        >
+          Register
+        </button>
+      </p>
+    </div>
+  );
 }
 
 export default PatientLogin;

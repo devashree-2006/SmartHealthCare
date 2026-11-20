@@ -2241,3 +2241,114 @@
     max-width: 95px;
   }
 }
+
+
+/* ==============================
+   PATIENT LOGIN PAGE
+============================== */
+
+.login-container {
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 30px 20px;
+  background: #f7f8fc;
+  color: #24283b;
+}
+
+.login-container h1 {
+  color: #5967db;
+  font-size: 32px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.login-container h2 {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.login-container > p {
+  color: #858b9f;
+  font-size: 14px;
+  margin-bottom: 22px;
+  text-align: center;
+}
+
+.login-container form {
+  width: 100%;
+  max-width: 400px;
+  box-sizing: border-box;
+  display: grid;
+  gap: 16px;
+  padding: 32px;
+  background: #ffffff;
+  border: 1px solid #eceef5;
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(44, 54, 90, 0.07);
+}
+
+.login-container input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px;
+  border: 1px solid #dfe3ef;
+  border-radius: 9px;
+  outline: none;
+  font-size: 14px;
+  color: #24283b;
+  background: #ffffff;
+}
+
+.login-container input:focus {
+  border-color: #6873d9;
+  box-shadow: 0 0 0 3px #6873d920;
+}
+
+.login-container form button {
+  padding: 13px;
+  border: none;
+  border-radius: 9px;
+  background: #626fe0;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.login-container form button:hover {
+  background: #4f5dc9;
+}
+
+.login-container form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-container > p:last-child {
+  margin-top: 20px;
+  color: #777e93;
+}
+
+.login-container > p:last-child button {
+  border: none;
+  background: transparent;
+  color: #5967db;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.login-container > p:last-child button:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .login-container form {
+    padding: 24px 18px;
+  }
+}
+
