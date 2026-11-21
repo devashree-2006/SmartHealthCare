@@ -21,7 +21,10 @@ import PatientRegister from "./pages/Patient/PatientRegister";
 
 import { apiRequest } from "./services/api";
 
+
 import "./App.css";
+
+
 
 // SIDEBAR MENU
 const menuItems = [
@@ -141,11 +144,52 @@ function AppLayout({ user, onLogout }) {
   );
 }
 
+
+// COMMON PORTAL SELECTION
+function PortalSelection({ onSelect }) {
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        background: "#f4f7fb",
+        padding: "30px",
+      }}
+    >
+      <div style={{ textAlign: "center" }}>
+        <h1>CareSync</h1>
+        <p>Smart Healthcare Management System</p>
+
+        <div style={{ display: "flex", gap: "20px", marginTop: "30px" }}>
+          <button
+            onClick={() => onSelect("patient")}
+            style={{ padding: "20px 35px", cursor: "pointer" }}
+          >
+            Patient Portal
+          </button>
+
+          <button
+            onClick={() => onSelect("doctor")}
+            style={{ padding: "20px 35px", cursor: "pointer" }}
+          >
+            Doctor Portal
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
 // MAIN APP
 function App() {
   const [user, setUser] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [showRegister, setShowRegister] = useState(false);
+  const [selectedPortal, setSelectedPortal] = useState(null);
 
   // CHECK EXISTING LOGIN SESSION
   useEffect(() => {
@@ -178,10 +222,20 @@ function App() {
     }
   };
 
-  // LOADING SCREEN
-  if (checkingAuth) {
-    return <div>Loading CareSync...</div>;
-  }
+// PORTAL SELECTION
+if (!selectedPortal) {
+  return <PortalSelection onSelect={setSelectedPortal} />;
+}
+
+// DOCTOR DASHBOARD
+if (selectedPortal === "doctor") {
+  return <DoctorDashboard />;
+}
+
+// PATIENT LOADING SCREEN
+if (checkingAuth) {
+  return <div>Loading CareSync...</div>;
+}
 
   return (
     <BrowserRouter>
