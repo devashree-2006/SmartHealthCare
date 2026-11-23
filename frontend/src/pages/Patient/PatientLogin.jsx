@@ -1,9 +1,9 @@
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { apiRequest } from "../../services/api";
 import "../../App.css";
 
-function PatientLogin({ onLogin, onGoToRegister }) {
+function PatientLogin({ onLogin, onGoToRegister, onGoToPortal }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -69,6 +69,7 @@ function PatientLogin({ onLogin, onGoToRegister }) {
           Register
         </button>
       </p>
+      {onGoToPortal && <button type="button" onClick={onGoToPortal}>Choose another portal</button>}
     </div>
   );
 }

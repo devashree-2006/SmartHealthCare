@@ -1,18 +1,10 @@
-
-const authMiddleware = (req, res, next) => {
-  if (!req.session || !req.session.user) {
-    return res.status(401).json({
-      message: "Please log in first",
-    });
+const requireRole = (...roles) => (req, res, next) => {
+  const user = req.session?.user;
+  if (!user) return res.status(401).json({ message: "Please log in first." });
+  if (roles.length && !roles.includes(user.role)) {
+    return res.status(403).json({ message: "Access denied." });
   }
-
-  if (req.session.user.role !== "patient") {
-    return res.status(403).json({
-      message: "Access denied",
-    });
-  }
-
   next();
 };
 
-module.exports = authMiddleware;
+module.exports = requireRole;

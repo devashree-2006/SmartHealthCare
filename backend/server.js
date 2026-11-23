@@ -8,6 +8,10 @@ const MongoStore = require("connect-mongo").default;
 
 const connectDB = require("./config/db");
 const patientRoutes = require("./routes/patientRoutes");
+const doctorRoutes = require("./routes/doctorRoutes");
+const appointmentRoutes = require("./routes/appointmentRoutes");
+const handoverRoutes = require("./routes/handoverRoutes");
+const authRoutes = require("./routes/authRoutes");
 
 dotenv.config();
 
@@ -47,6 +51,10 @@ app.use(
 
 // Patient API Routes
 app.use("/api/patients", patientRoutes);
+app.use("/api/doctors", doctorRoutes);
+app.use("/api/appointments", appointmentRoutes);
+app.use("/api/handovers", handoverRoutes);
+app.use("/api/auth", authRoutes);
 
 // Test route
 app.get("/", (req, res) => {
