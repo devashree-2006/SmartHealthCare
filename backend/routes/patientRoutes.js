@@ -10,14 +10,14 @@ const {
   logoutPatient,
 } = require("../controllers/patientController");
 
-const authMiddleware = require("../middleware/authMiddleware");
+const requireRole = require("../middleware/authMiddleware");
 
 // Public routes
 router.post("/register", registerPatient);
 router.post("/login", loginPatient);
 
 // Protected routes
-router.get("/profile", authMiddleware, getPatientProfile);
-router.put("/profile", authMiddleware, updatePatientProfile);
-router.post("/logout", authMiddleware, logoutPatient);
+router.get("/profile", requireRole("patient"), getPatientProfile);
+router.put("/profile", requireRole("patient"), updatePatientProfile);
+router.post("/logout", requireRole("patient"), logoutPatient);
 module.exports = router;

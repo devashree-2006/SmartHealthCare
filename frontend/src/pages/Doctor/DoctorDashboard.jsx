@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import HandoverSummaries from "./HandoverSummaries.jsx";
 import DoctorAppointments from "./DoctorAppointments.jsx";
-
-const API_URL = "http://localhost:5000/api/doctors";
-const APPOINTMENTS_API_URL = "http://localhost:5000/api/appointments";
+import { apiRequest } from "../../services/api";
+import "../../../App.css";
 
 const defaultDoctor = {
   name: "Dr. Ananya Sharma",
@@ -36,6 +35,8 @@ const formatAppointment = (item, index) => ({
   id: item._id,
   patientId: item.patientId || null,
   name: item.patientName,
+  email: item.patientEmail || "",
+  phone: item.patientPhone || "",
   initials: getInitials(item.patientName),
   type: item.type,
   time: item.appointmentTime,
@@ -45,7 +46,7 @@ const formatAppointment = (item, index) => ({
   reason: item.reason || "",
 });
 
-export default function DoctorDashboard() {
+export default function DoctorDashboard({ onLogout }) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   useEffect(() => {
@@ -100,24 +101,7 @@ export default function DoctorDashboard() {
       setDoctorError("");
 
       try {
-        const response = await fetch(API_URL);
-
-        if (!response.ok) {
-          throw new Error("Unable to fetch doctor details.");
-        }
-
-        const doctors = await response.json();
-
-        if (!Array.isArray(doctors) || doctors.length === 0) {
-          throw new Error("No doctor record found in the database.");
-        }
-
-        const doctorData =
-          doctors.find(
-            (item) =>
-              item.email?.toLowerCase() ===
-              "ananya.sharma@example.com"
-          ) || doctors[0];
+        const doctorData = await apiRequest("/doctors/profile");
 
         if (cancelled) return;
 
@@ -126,7 +110,7 @@ export default function DoctorDashboard() {
           initials: getInitials(doctorData.name),
           specialization:
             doctorData.specialization || defaultDoctor.specialization,
-          doctorId: doctorData._id || defaultDoctor.doctorId,
+          doctorId: doctorData._id || doctorData.id,
           qualification:
             doctorData.qualification || defaultDoctor.qualification,
           email: doctorData.email || defaultDoctor.email,
@@ -167,17 +151,7 @@ export default function DoctorDashboard() {
       setAppointmentError("");
 
       try {
-        const response = await fetch(
-          `${APPOINTMENTS_API_URL}/doctor/${doctor.doctorId}`
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data.message || "Unable to fetch appointments."
-          );
-        }
+        const data = await apiRequest("/appointments/doctor");
 
         if (!Array.isArray(data)) {
           throw new Error("Invalid appointment data received.");
@@ -231,26 +205,10 @@ export default function DoctorDashboard() {
     setAppointmentError("");
 
     try {
-      const response = await fetch(
-        `${APPOINTMENTS_API_URL}/${id}/status`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            status: newStatus,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.message || "Unable to update appointment status."
-        );
-      }
+      await apiRequest(`/appointments/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: newStatus }),
+      });
 
       // Update appointment list after successful database update
       setAppointmentList((previousAppointments) =>
@@ -303,25 +261,13 @@ export default function DoctorDashboard() {
     setProfileMessage("");
 
     try {
-      const response = await fetch(
-        `${API_URL}/${doctor.doctorId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ...profileForm,
-            experience: Number(profileForm.experience),
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Profile update failed.");
-      }
+      const data = await apiRequest("/doctors/profile", {
+        method: "PUT",
+        body: JSON.stringify({
+          ...profileForm,
+          experience: Number(profileForm.experience),
+        }),
+      });
 
       const updatedDoctor = data.doctor;
 
@@ -483,6 +429,7 @@ const stats = [
             </button>
 
             <div className="topbar-avatar">{doctor.initials}</div>
+            <button type="button" className="text-button" onClick={onLogout}>Logout</button>
           </div>
         </header>
 
@@ -525,6 +472,13 @@ const stats = [
 
                 <h2>{selectedAppointment.name}</h2>
                 <p>{selectedAppointment.type}</p>
+
+                {selectedAppointment.email && (
+                  <div className="detail-row"><span>Patient email</span><strong>{selectedAppointment.email}</strong></div>
+                )}
+                {selectedAppointment.phone && (
+                  <div className="detail-row"><span>Patient phone</span><strong>{selectedAppointment.phone}</strong></div>
+                )}
 
                 <div className="detail-row">
                   <span>Appointment time</span>

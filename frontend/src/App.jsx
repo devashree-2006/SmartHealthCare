@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   BrowserRouter,
@@ -18,6 +18,8 @@ import PatientProfile from "./pages/Patient/PatientProfile";
 
 import PatientLogin from "./pages/Patient/PatientLogin";
 import PatientRegister from "./pages/Patient/PatientRegister";
+import DoctorDashboard from "./pages/Doctor/DoctorDashboard";
+import DoctorAccess from "./pages/Doctor/DoctorAccess";
 
 import { apiRequest } from "./services/api";
 
@@ -145,45 +147,6 @@ function AppLayout({ user, onLogout }) {
 }
 
 
-// COMMON PORTAL SELECTION
-function PortalSelection({ onSelect }) {
-  return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        background: "#f4f7fb",
-        padding: "30px",
-      }}
-    >
-      <div style={{ textAlign: "center" }}>
-        <h1>CareSync</h1>
-        <p>Smart Healthcare Management System</p>
-
-        <div style={{ display: "flex", gap: "20px", marginTop: "30px" }}>
-          <button
-            onClick={() => onSelect("patient")}
-            style={{ padding: "20px 35px", cursor: "pointer" }}
-          >
-            Patient Portal
-          </button>
-
-          <button
-            onClick={() => onSelect("doctor")}
-            style={{ padding: "20px 35px", cursor: "pointer" }}
-          >
-            Doctor Portal
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-
 // MAIN APP
 function App() {
   const [user, setUser] = useState(null);
@@ -191,80 +154,55 @@ function App() {
   const [showRegister, setShowRegister] = useState(false);
   const [selectedPortal, setSelectedPortal] = useState(null);
 
-  // CHECK EXISTING LOGIN SESSION
+  // Restore either role from the same server-side session.
   useEffect(() => {
-    const checkLogin = async () => {
+    const restoreSession = async () => {
       try {
-        const patient = await apiRequest("/patients/profile");
-        setUser(patient);
-      } catch (error) {
+        const currentUser = await apiRequest("/auth/me");
+        setUser(currentUser);
+        setSelectedPortal(currentUser.role);
+      } catch {
         setUser(null);
       } finally {
         setCheckingAuth(false);
       }
     };
 
-    checkLogin();
+    restoreSession();
   }, []);
 
-  // PATIENT LOGOUT
   const handleLogout = async () => {
     try {
-      await apiRequest("/patients/logout", {
-        method: "POST",
-      });
-
+      await apiRequest("/auth/logout", { method: "POST" });
       setUser(null);
       setShowRegister(false);
+      setSelectedPortal(null);
     } catch (error) {
       console.error("Logout failed:", error.message);
       alert("Unable to logout. Please try again.");
     }
   };
 
-// PORTAL SELECTION
-if (!selectedPortal) {
-  return <PortalSelection onSelect={setSelectedPortal} />;
-}
-
-// DOCTOR DASHBOARD
-if (selectedPortal === "doctor") {
-  return <DoctorDashboard />;
-}
-
-// PATIENT LOADING SCREEN
-if (checkingAuth) {
-  return <div>Loading CareSync...</div>;
-}
-
   return (
     <BrowserRouter>
-      {!user ? (
-
-        showRegister ? (
-
-          <PatientRegister
-            onRegister={setUser}
-            onGoToLogin={() => setShowRegister(false)}
-          />
-
+      {checkingAuth ? <div>Loading CareSync...</div> :
+        user?.role === "patient" ? <AppLayout user={user} onLogout={handleLogout} /> :
+        user?.role === "doctor" ? <DoctorDashboard onLogout={handleLogout} /> :
+        selectedPortal === "patient" ? (
+          showRegister
+            ? <PatientRegister onRegister={setUser} onGoToLogin={() => setShowRegister(false)} onGoToPortal={() => { setSelectedPortal(null); setShowRegister(false); }} />
+            : <PatientLogin onLogin={setUser} onGoToRegister={() => setShowRegister(true)} onGoToPortal={() => setSelectedPortal(null)} />
+        ) :
+        selectedPortal === "doctor" ? (
+          <DoctorAccess onLogin={setUser} onBack={() => setSelectedPortal(null)} />
         ) : (
-
-          <PatientLogin
-            onLogin={setUser}
-            onGoToRegister={() => setShowRegister(true)}
-          />
-
-        )
-
-      ) : (
-
-        <AppLayout
-          user={user}
-          onLogout={handleLogout}
-        />
-
-      )}
+          <div className="login-container">
+            <h1>CareSync</h1>
+            <p>Choose your portal to continue.</p>
+            <button type="button" onClick={() => setSelectedPortal("patient")}>Patient Portal</button>
+            <button type="button" onClick={() => setSelectedPortal("doctor")}>Doctor Portal</button>
+          </div>
+        )}
     </BrowserRouter>
   );
 }

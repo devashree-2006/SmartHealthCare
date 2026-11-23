@@ -1,7 +1,6 @@
 
 import { useMemo, useState, useEffect } from "react";
-
-const API_URL = "http://localhost:5000/api/doctors";
+import { apiRequest } from "../../services/api";
 
 function HandoverSummaries({ doctorId }) {
   const [summaries, setSummaries] = useState([]);
@@ -31,7 +30,6 @@ function HandoverSummaries({ doctorId }) {
   // Fetch handover records from MongoDB.
   useEffect(() => {
     if (!validDoctorId) {
-      setLoading(true);
       return;
     }
 
@@ -40,16 +38,7 @@ function HandoverSummaries({ doctorId }) {
       setError("");
 
       try {
-        const response = await fetch(
-          `${API_URL}/${doctorId}/handovers`
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || "Could not load handovers.");
-        }
-
+        const data = await apiRequest("/handovers");
         setSummaries(data);
       } catch (err) {
         setError(err.message || "Unable to connect to the server.");
@@ -113,22 +102,10 @@ function HandoverSummaries({ doctorId }) {
     setMessage("");
 
     try {
-      const response = await fetch(
-        `${API_URL}/${doctorId}/handovers`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(form),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Could not save handover.");
-      }
+      const data = await apiRequest("/handovers", {
+        method: "POST",
+        body: JSON.stringify(form),
+      });
 
       setSummaries((previous) => [
         data.handover,
@@ -156,18 +133,7 @@ function HandoverSummaries({ doctorId }) {
     setMessage("");
 
     try {
-      const response = await fetch(
-        `${API_URL}/${doctorId}/handovers/${id}`,
-        {
-          method: "DELETE",
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Could not delete handover.");
-      }
+      await apiRequest(`/handovers/${id}`, { method: "DELETE" });
 
       setSummaries((previous) =>
         previous.filter((summary) => summary._id !== id)

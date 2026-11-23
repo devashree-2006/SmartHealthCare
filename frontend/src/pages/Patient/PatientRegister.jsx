@@ -1,8 +1,8 @@
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { apiRequest } from "../../services/api";
 
-function PatientRegister({ onRegister, onGoToLogin }) {
+function PatientRegister({ onRegister, onGoToLogin, onGoToPortal }) {
   const [form, setForm] = useState({
     fullName: "",
     email: "",
@@ -131,6 +131,7 @@ function PatientRegister({ onRegister, onGoToLogin }) {
           Login
         </button>
       </p>
+      {onGoToPortal && <button type="button" onClick={onGoToPortal}>Choose another portal</button>}
     </div>
   );
 }
