@@ -20,6 +20,8 @@ import PatientLogin from "./pages/Patient/PatientLogin";
 import PatientRegister from "./pages/Patient/PatientRegister";
 import DoctorDashboard from "./pages/Doctor/DoctorDashboard";
 import DoctorAccess from "./pages/Doctor/DoctorAccess";
+import AdminAccess from "./pages/Admin/AdminAccess";
+import AdminDashboard from "./pages/Admin/AdminDashboard";
 
 import { apiRequest } from "./services/api";
 
@@ -188,6 +190,7 @@ function App() {
       {checkingAuth ? <div>Loading CareSync...</div> :
         user?.role === "patient" ? <AppLayout user={user} onLogout={handleLogout} /> :
         user?.role === "doctor" ? <DoctorDashboard onLogout={handleLogout} /> :
+        user?.role === "admin" ? <AdminDashboard onLogout={handleLogout} /> :
         selectedPortal === "patient" ? (
           showRegister
             ? <PatientRegister onRegister={setUser} onGoToLogin={() => setShowRegister(false)} onGoToPortal={() => { setSelectedPortal(null); setShowRegister(false); }} />
@@ -195,12 +198,15 @@ function App() {
         ) :
         selectedPortal === "doctor" ? (
           <DoctorAccess onLogin={setUser} onBack={() => setSelectedPortal(null)} />
+        ) : selectedPortal === "admin" ? (
+          <AdminAccess onLogin={setUser} onBack={() => setSelectedPortal(null)} />
         ) : (
           <div className="login-container">
             <h1>CareSync</h1>
             <p>Choose your portal to continue.</p>
             <button type="button" onClick={() => setSelectedPortal("patient")}>Patient Portal</button>
             <button type="button" onClick={() => setSelectedPortal("doctor")}>Doctor Portal</button>
+            <button type="button" onClick={() => setSelectedPortal("admin")}>Admin Portal</button>
           </div>
         )}
     </BrowserRouter>

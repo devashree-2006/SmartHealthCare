@@ -12,6 +12,10 @@ const doctorRoutes = require("./routes/doctorRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
 const handoverRoutes = require("./routes/handoverRoutes");
 const authRoutes = require("./routes/authRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+const bedRoutes = require("./routes/bedRoutes");
+const staffRoutes = require("./routes/staffRoutes");
+const activityLogRoutes = require("./routes/activityLogRoutes");
 
 dotenv.config();
 
@@ -55,6 +59,10 @@ app.use("/api/doctors", doctorRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/handovers", handoverRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/beds", bedRoutes);
+app.use("/api/staff", staffRoutes);
+app.use("/api/activity-logs", activityLogRoutes);
 
 // Test route
 app.get("/", (req, res) => {
