@@ -1,56 +1,187 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+
 import Sidebar from "../../components/Sidebar";
 import Navbar from "../../components/Navbar";
 import StatCard from "../../components/StatCard";
-
 
 import BedManagement from "./BedManagement";
 import StaffManagement from "./StaffManagement";
 import ResourceAnalytics from "./ResourceAnalytics";
 import BottleneckAlerts from "./BottleneckAlerts";
+import ActivityLog from "./ActivityLog";
+
+import {
+  getAdminDashboardStats,
+  getBottleneckAlerts,
+} from "../../services/api";
+
+const initialStats = {
+  beds: {
+    total: 0,
+    available: 0,
+    occupied: 0,
+  },
+  staff: {
+    total: 0,
+    onDuty: 0,
+    offDuty: 0,
+  },
+};
 
 function AdminDashboard() {
   const [currentDate, setCurrentDate] = useState("");
-
-useEffect(() => {
-  setCurrentDate(
-    new Date().toLocaleDateString("en-IN", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    })
-  );
-}, []);
   const [activeSection, setActiveSection] = useState("Dashboard");
 
+  const [dashboardStats, setDashboardStats] = useState(initialStats);
+  const [alerts, setAlerts] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [lastUpdated, setLastUpdated] = useState("");
+
+  // Fetch dashboard information
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setError("");
+      setLoading(true);
+
+      const [statsData, alertsData] = await Promise.all([
+        getAdminDashboardStats(),
+        getBottleneckAlerts(),
+      ]);
+
+      setDashboardStats({
+        beds: {
+          total: Number(statsData?.beds?.total) || 0,
+          available: Number(statsData?.beds?.available) || 0,
+          occupied: Number(statsData?.beds?.occupied) || 0,
+        },
+        staff: {
+          total: Number(statsData?.staff?.total) || 0,
+          onDuty: Number(statsData?.staff?.onDuty) || 0,
+          offDuty: Number(statsData?.staff?.offDuty) || 0,
+        },
+      });
+
+      setAlerts(Array.isArray(alertsData) ? alertsData : []);
+
+      setLastUpdated(new Date().toLocaleTimeString("en-IN"));
+    } catch (err) {
+      console.error("Unable to load dashboard:", err);
+      setError("Unable to load dashboard data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Load dashboard when opened
+  useEffect(() => {
+    fetchDashboardData();
+
+    setCurrentDate(
+      new Date().toLocaleDateString("en-IN", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    );
+  }, [fetchDashboardData]);
+
+  // Bed statistics
+  const totalBeds = dashboardStats.beds.total;
+  const availableBeds = dashboardStats.beds.available;
+  const occupiedBeds = dashboardStats.beds.occupied;
+
+  // Staff statistics
+  const totalStaff = dashboardStats.staff.total;
+  const onDutyStaff = dashboardStats.staff.onDuty;
+  const offDutyStaff = dashboardStats.staff.offDuty;
+
+  // Calculate percentages
+  const occupancyRate =
+    totalBeds > 0
+      ? Math.min(100, Math.round((occupiedBeds / totalBeds) * 100))
+      : 0;
+
+  const availabilityRate =
+    totalBeds > 0
+      ? Math.min(100, Math.round((availableBeds / totalBeds) * 100))
+      : 0;
+
+  const staffDutyRate =
+    totalStaff > 0
+      ? Math.min(100, Math.round((onDutyStaff / totalStaff) * 100))
+      : 0;
+
+  const staffOffDutyRate =
+    totalStaff > 0
+      ? Math.min(100, Math.round((offDutyStaff / totalStaff) * 100))
+      : 0;
+
+  // Dashboard statistics cards
   const stats = [
     {
-      title: "Total Patients",
-      value: "1,248",
-      icon: "👥",
+      title: "Total Beds",
+      value: totalBeds.toString(),
+      icon: "▦",
       color: "blue",
     },
     {
       title: "Available Beds",
-      value: "86",
-      icon: "🛏️",
+      value: availableBeds.toString(),
+      icon: "✓",
       color: "green",
     },
     {
-      title: "Doctors",
-      value: "64",
-      icon: "🩺",
+      title: "Occupied Beds",
+      value: occupiedBeds.toString(),
+      icon: "▤",
       color: "purple",
     },
     {
       title: "Staff Members",
-      value: "142",
-      icon: "👨‍⚕️",
+      value: totalStaff.toString(),
+      icon: "♙",
       color: "orange",
     },
   ];
+
+  // Alert calculations
+  const criticalAlerts = alerts.filter(
+    (alert) => alert.severity === "Critical"
+  ).length;
+
+  const activeAlerts = alerts.filter(
+    (alert) => alert.status === "Active"
+  ).length;
+
+  // Module navigation
+  const renderActiveSection = () => {
+    switch (activeSection) {
+      case "Dashboard":
+        return null;
+
+      case "Bed Management":
+        return <BedManagement />;
+
+      case "Staff Management":
+        return <StaffManagement />;
+
+      case "Resource Analytics":
+        return <ResourceAnalytics />;
+
+      case "Bottleneck Alerts":
+        return <BottleneckAlerts />;
+
+      case "Activity Log":
+        return <ActivityLog />;
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="admin-layout">
@@ -64,153 +195,330 @@ useEffect(() => {
 
         {activeSection === "Dashboard" ? (
           <section className="dashboard-content">
-            <div className="page-heading">
+
+            {/* Dashboard Header */}
+            <div className="page-heading dashboard-header">
               <div>
+                <span className="dashboard-eyebrow">
+                  CARESYNC HOSPITAL MANAGEMENT
+                </span>
+
                 <h1>Admin Dashboard</h1>
-                <p>Welcome to CareSync Hospital Management</p>
-<p className="dashboard-date">{currentDate}</p>
+
+                <p className="dashboard-welcome">
+                  Welcome back! Here's your hospital overview.
+                </p>
+
+                <p className="dashboard-date">
+                  {currentDate}
+                </p>
               </div>
 
               <div className="dashboard-heading-actions">
-  <button
-    type="button"
-    className="refresh-button"
-    onClick={() => window.location.reload()}
-  >
-    ↻ Refresh Dashboard
-  </button>
+                <span
+                  className={`status-badge ${
+                    error ? "status-error" : "status-success"
+                  }`}
+                >
+                  <span className="status-indicator" />
+                  {error ? "Data Unavailable" : "Data Loaded"}
+                </span>
 
-  <span className="status-badge">● System Online</span>
-</div>
+                <button
+                  type="button"
+                  className="refresh-button dashboard-refresh"
+                  onClick={fetchDashboardData}
+                  disabled={loading}
+                >
+                  <span>{loading ? "↻" : "⟳"}</span>
+                  {loading ? "Refreshing..." : "Refresh Dashboard"}
+                </button>
+              </div>
             </div>
 
-            <div className="stats-grid">
-              {stats.map((stat) => (
-                <StatCard key={stat.title} {...stat} />
-              ))}
-            </div>
+            {/* Error Message */}
+            {error && (
+              <div className="dashboard-error" role="alert">
+                <span>{error}</span>
 
-            <div className="dashboard-grid">
-              <section className="panel overview-panel">
-                <h2>Hospital Overview</h2>
-
-                <p className="panel-description">
-                  A quick overview of hospital operations.
-                </p>
-
-                <div className="overview-item">
-                  <span>Occupied Beds</span>
-                  <strong>214</strong>
-                </div>
-
-                <div className="progress-track">
-                  <div
-                    className="progress-fill"
-                    style={{ width: "72%" }}
-                  />
-                </div>
-
-                <div className="overview-item">
-                  <span>Available Beds</span>
-                  <strong>86</strong>
-                </div>
-
-                <div className="progress-track">
-                  <div
-                    className="progress-fill green-fill"
-                    style={{ width: "28%" }}
-                  />
-                </div>
-
-                <div className="overview-item">
-                  <span>Pending Appointments</span>
-                  <strong>18</strong>
-                </div>
-              </section>
-
-              <section className="panel alerts-panel">
-                <h2>Recent Alerts</h2>
-
-                <p className="panel-description">
-                  Items that may need administrator attention.
-                </p>
-
-                <div className="alert-item warning-alert">
-                  <span>!</span>
-                  <div>
-                    <strong>Bed Capacity</strong>
-                    <p>
-                      Review occupancy in high-demand wards.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="alert-item info-alert">
-                  <span>i</span>
-                  <div>
-                    <strong>Staff Scheduling</strong>
-                    <p>
-                      Check upcoming shift assignments.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="alert-item success-alert">
-                  <span>✓</span>
-                  <div>
-                    <strong>System Status</strong>
-                    <p>
-                      Dashboard interface is ready for testing.
-                    </p>
-                  </div>
-                </div>
-              </section>
-            </div>
-
-            <section className="panel activity-panel">
-              <h2>Recent Hospital Activity</h2>
-
-              <div className="activity-row">
-                <span className="activity-dot blue-dot" />
-                <div>
-                  <strong>Patient Management</strong>
-                  <p>Patient overview section is available.</p>
-                </div>
-                <time>Overview</time>
+                <button
+                  type="button"
+                  onClick={fetchDashboardData}
+                  disabled={loading}
+                >
+                  Retry
+                </button>
               </div>
+            )}
 
-              <div className="activity-row">
-                <span className="activity-dot green-dot" />
-                <div>
-                  <strong>Bed Management</strong>
-                  <p>Bed occupancy summary is displayed.</p>
-                </div>
-                <time>Overview</time>
+            {loading ? (
+              <div className="dashboard-loading">
+                <div className="dashboard-loader" />
+                <p>Loading hospital information...</p>
               </div>
+            ) : (
+              <>
 
-              <div className="activity-row">
-                <span className="activity-dot orange-dot" />
-                <div>
-                  <strong>Staff Management</strong>
-                  <p>Staff summary is displayed.</p>
+                {/* Statistics Cards */}
+                <div className="stats-grid">
+                  {stats.map((stat) => (
+                    <StatCard
+                      key={stat.title}
+                      {...stat}
+                    />
+                  ))}
                 </div>
-                <time>Overview</time>
-              </div>
-            </section>
 
-            <p className="dashboard-footer">
+                {/* Main Dashboard Grid */}
+                <div className="dashboard-grid">
+
+                  {/* Hospital Overview */}
+                  <section className="panel overview-panel">
+                    <div className="panel-header">
+                      <div>
+                        <h2>Hospital Overview</h2>
+                        <p className="panel-description">
+                          Current hospital resource utilization.
+                        </p>
+                      </div>
+
+                      <span className="panel-icon">▦</span>
+                    </div>
+
+                    {/* Bed Occupancy */}
+                    <div className="resource-block">
+                      <div className="resource-heading">
+                        <span>Bed Occupancy</span>
+                        <strong>{occupancyRate}%</strong>
+                      </div>
+
+                      <div className="progress-track">
+                        <div
+                          className="progress-fill"
+                          style={{ width: `${occupancyRate}%` }}
+                        />
+                      </div>
+
+                      <p className="resource-caption">
+                        {occupiedBeds} occupied out of {totalBeds} beds
+                      </p>
+                    </div>
+
+                    {/* Bed Availability */}
+                    <div className="resource-block">
+                      <div className="resource-heading">
+                        <span>Bed Availability</span>
+                        <strong>{availabilityRate}%</strong>
+                      </div>
+
+                      <div className="progress-track">
+                        <div
+                          className="progress-fill green-fill"
+                          style={{ width: `${availabilityRate}%` }}
+                        />
+                      </div>
+
+                      <p className="resource-caption">
+                        {availableBeds} beds currently available
+                      </p>
+                    </div>
+
+                    <div className="panel-divider" />
+
+                    <h3 className="resource-subheading">
+                      Staff Availability
+                    </h3>
+
+                    {/* Staff On Duty */}
+                    <div className="resource-block">
+                      <div className="resource-heading">
+                        <span>On Duty</span>
+                        <strong>{onDutyStaff} / {totalStaff}</strong>
+                      </div>
+
+                      <div className="progress-track">
+                        <div
+                          className="progress-fill green-fill"
+                          style={{ width: `${staffDutyRate}%` }}
+                        />
+                      </div>
+
+                      <p className="resource-caption">
+                        {staffDutyRate}% of registered staff
+                      </p>
+                    </div>
+
+                    {/* Staff Off Duty */}
+                    <div className="resource-block">
+                      <div className="resource-heading">
+                        <span>Off Duty</span>
+                        <strong>{offDutyStaff} / {totalStaff}</strong>
+                      </div>
+
+                      <div className="progress-track">
+                        <div
+                          className="progress-fill"
+                          style={{ width: `${staffOffDutyRate}%` }}
+                        />
+                      </div>
+
+                      <p className="resource-caption">
+                        {staffOffDutyRate}% of registered staff
+                      </p>
+                    </div>
+                  </section>
+
+                  {/* Recent Alerts */}
+                  <section className="panel alerts-panel">
+                    <div className="panel-header">
+                      <div>
+                        <h2>Recent Alerts</h2>
+                        <p className="panel-description">
+                          Hospital bottleneck monitoring and notifications.
+                        </p>
+                      </div>
+
+                      <span className="panel-icon alert-panel-icon">!</span>
+                    </div>
+
+                    <div className="alert-summary-grid">
+                      <div className="alert-summary-card">
+                        <span>Total Alerts</span>
+                        <strong>{alerts.length}</strong>
+                      </div>
+
+                      <div className="alert-summary-card critical-summary">
+                        <span>Critical</span>
+                        <strong>{criticalAlerts}</strong>
+                      </div>
+
+                      <div className="alert-summary-card active-summary">
+                        <span>Active</span>
+                        <strong>{activeAlerts}</strong>
+                      </div>
+                    </div>
+
+                    <h3 className="resource-subheading">
+                      Latest Notifications
+                    </h3>
+
+                    {alerts.length === 0 ? (
+                      <div className="empty-alerts">
+                        <span>✓</span>
+                        <strong>No Current Alerts</strong>
+                        <p>
+                          There are currently no bottleneck alerts to display.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="recent-alert-list">
+                        {alerts.slice(0, 3).map((alert, index) => (
+                          <div
+                            className="alert-item warning-alert"
+                            key={alert._id || alert.id || index}
+                          >
+                            <span className="alert-indicator">!</span>
+
+                            <div className="alert-content">
+                              <strong>
+                                {alert.title || "Untitled Alert"}
+                              </strong>
+
+                              <p>
+                                {alert.description || "No description available."}
+                              </p>
+
+                              <small>
+                                {alert.severity || "Unspecified"} ·{" "}
+                                {alert.status || "Unknown"}
+                              </small>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      className="view-alerts-button"
+                      onClick={() =>
+                        setActiveSection("Bottleneck Alerts")
+                      }
+                    >
+                      View All Alerts →
+                    </button>
+                  </section>
+                </div>
+
+                {/* Resource Summary */}
+                <section className="panel activity-panel">
+                  <div className="panel-header">
+                    <div>
+                      <h2>Resource Summary</h2>
+                      <p className="panel-description">
+                        Overview of registered hospital resources.
+                      </p>
+                    </div>
+
+                    <span className="panel-icon">◈</span>
+                  </div>
+
+                  <div className="resource-summary-grid">
+
+                    <div className="resource-summary-item">
+                      <span className="activity-dot blue-dot" />
+
+                      <div>
+                        <strong>Bed Management</strong>
+                        <p>
+                          {totalBeds} beds registered in the database.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="resource-summary-item">
+                      <span className="activity-dot green-dot" />
+
+                      <div>
+                        <strong>Staff Management</strong>
+                        <p>
+                          {totalStaff} staff members registered,{" "}
+                          {onDutyStaff} currently on duty.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="resource-summary-item">
+                      <span className="activity-dot orange-dot" />
+
+                      <div>
+                        <strong>Bottleneck Monitoring</strong>
+                        <p>
+                          {activeAlerts} active alerts detected.
+                        </p>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  <div className="last-updated">
+                    <span>Last updated</span>
+                    <strong>
+                      {lastUpdated || "Not updated yet"}
+                    </strong>
+                  </div>
+                </section>
+              </>
+            )}
+
+            {/* Dashboard Footer */}
+            <footer className="dashboard-footer">
               CareSync · Smart Healthcare Management
-            </p>
+            </footer>
           </section>
-        ) : activeSection === "Bed Management" ? (
-          <BedManagement />
-        ) : activeSection === "Staff Management" ? (
-          <StaffManagement />
-        ) : activeSection === "Resource Analytics" ? (
-          <ResourceAnalytics />
-        ) : activeSection === "Bottleneck Alerts" ? (
-          <BottleneckAlerts />
-        ) : null}
+        ) : (
+          renderActiveSection()
+        )}
       </main>
     </div>
   );

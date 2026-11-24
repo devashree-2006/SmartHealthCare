@@ -1,41 +1,91 @@
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { getBeds, getStaff } from "../../services/api";
 
 const ResourceAnalytics = () => {
   const [period, setPeriod] = useState("Today");
+  const [beds, setBeds] = useState([]);
+  const [staff, setStaff] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const resourceData = {
-    Today: {
-      patients: 124,
-      doctors: 18,
-      staff: 42,
-      beds: 80,
-      occupiedBeds: 58,
-      appointments: 36,
-    },
-    Week: {
-      patients: 846,
-      doctors: 18,
-      staff: 42,
-      beds: 80,
-      occupiedBeds: 63,
-      appointments: 248,
-    },
-    Month: {
-      patients: 3420,
-      doctors: 18,
-      staff: 42,
-      beds: 80,
-      occupiedBeds: 61,
-      appointments: 986,
-    },
+  const fetchResources = async () => {
+    try {
+      setError("");
+      setLoading(true);
+
+      const [bedData, staffData] = await Promise.all([
+        getBeds(),
+        getStaff(),
+      ]);
+
+      setBeds(bedData);
+      setStaff(staffData);
+    } catch (err) {
+      console.error("Unable to load resource analytics:", err);
+      setError("Unable to load resource data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const data = resourceData[period];
-  const availableBeds = data.beds - data.occupiedBeds;
-  const occupancyRate = Math.round(
-    (data.occupiedBeds / data.beds) * 100
-  );
+  useEffect(() => {
+    fetchResources();
+  }, []);
+
+  const getPeriodStart = () => {
+    const now = new Date();
+    const start = new Date(now);
+
+    if (period === "Today") {
+      start.setHours(0, 0, 0, 0);
+    } else if (period === "Week") {
+      start.setHours(0, 0, 0, 0);
+      const day = start.getDay();
+      start.setDate(start.getDate() - (day === 0 ? 6 : day - 1));
+    } else {
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+    }
+
+    return start;
+  };
+
+  const periodStart = getPeriodStart();
+
+  const bedsAddedInPeriod = beds.filter(
+    (bed) => bed.createdAt && new Date(bed.createdAt) >= periodStart
+  ).length;
+
+  const staffAddedInPeriod = staff.filter(
+    (member) =>
+      member.createdAt &&
+      new Date(member.createdAt) >= periodStart
+  ).length;
+
+  const totalBeds = beds.length;
+  const occupiedBeds = beds.filter(
+    (bed) => bed.status === "Occupied"
+  ).length;
+  const availableBeds = beds.filter(
+    (bed) => bed.status === "Available"
+  ).length;
+
+  const totalStaff = staff.length;
+  const onDutyStaff = staff.filter(
+    (member) => member.status === "On Duty"
+  ).length;
+  const offDutyStaff = staff.filter(
+    (member) => member.status === "Off Duty"
+  ).length;
+
+  const occupancyRate = totalBeds
+    ? Math.round((occupiedBeds / totalBeds) * 100)
+    : 0;
+
+  const staffDutyRate = totalStaff
+    ? Math.round((onDutyStaff / totalStaff) * 100)
+    : 0;
 
   const styles = {
     page: {
@@ -67,6 +117,15 @@ const ResourceAnalytics = () => {
       borderRadius: "8px",
       background: "#ffffff",
       fontSize: "14px",
+    },
+    button: {
+      padding: "11px 16px",
+      border: "none",
+      borderRadius: "8px",
+      background: "#2563eb",
+      color: "#ffffff",
+      cursor: "pointer",
+      fontWeight: "600",
     },
     grid: {
       display: "grid",
@@ -101,14 +160,6 @@ const ResourceAnalytics = () => {
       overflow: "hidden",
       margin: "15px 0",
     },
-    legend: {
-      display: "flex",
-      justifyContent: "space-between",
-      gap: "12px",
-      flexWrap: "wrap",
-      fontSize: "14px",
-      color: "#475569",
-    },
     metricRow: {
       display: "flex",
       justifyContent: "space-between",
@@ -121,8 +172,18 @@ const ResourceAnalytics = () => {
       marginTop: "20px",
       color: "#64748b",
       fontSize: "13px",
+      lineHeight: "1.6",
     },
   };
+
+  if (loading) {
+    return (
+      <main style={styles.page}>
+        <h1 style={styles.heading}>Resource Analytics</h1>
+        <p>Loading resource data...</p>
+      </main>
+    );
+  }
 
   return (
     <main style={styles.page}>
@@ -134,74 +195,84 @@ const ResourceAnalytics = () => {
         <div>
           <h1 style={styles.heading}>Resource Analytics</h1>
           <p style={{ ...styles.subtitle, marginBottom: 0 }}>
-            Review hospital resources and operational indicators.
+            Monitor current hospital beds and staff resources.
           </p>
         </div>
 
-        <select
-          style={styles.select}
-          value={period}
-          onChange={(event) => setPeriod(event.target.value)}
-          aria-label="Analytics period"
-        >
-          <option value="Today">Today</option>
-          <option value="Week">This Week</option>
-          <option value="Month">This Month</option>
-        </select>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <select
+            style={styles.select}
+            value={period}
+            onChange={(event) => setPeriod(event.target.value)}
+            aria-label="Record creation period"
+          >
+            <option value="Today">Today</option>
+            <option value="Week">This Week</option>
+            <option value="Month">This Month</option>
+          </select>
+
+          <button
+            type="button"
+            style={styles.button}
+            onClick={fetchResources}
+          >
+            Refresh
+          </button>
+        </div>
       </div>
+
+      {error && (
+        <div
+          role="alert"
+          style={{
+            background: "#fee2e2",
+            color: "#991b1b",
+            padding: "14px",
+            borderRadius: "8px",
+            marginBottom: "20px",
+          }}
+        >
+          {error}
+          <button
+            type="button"
+            onClick={fetchResources}
+            style={{ marginLeft: "12px", cursor: "pointer" }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       <section style={styles.grid}>
         <div style={styles.card}>
-          <div style={styles.label}>Patients</div>
-          <div style={styles.value}>{data.patients.toLocaleString()}</div>
-          <div style={{ color: "#64748b", fontSize: "13px", marginTop: "8px" }}>
-            Selected period
-          </div>
+          <div style={styles.label}>Total Beds</div>
+          <div style={styles.value}>{totalBeds}</div>
+          <div style={styles.note}>Current database records</div>
         </div>
 
         <div style={styles.card}>
-          <div style={styles.label}>Doctors</div>
-          <div style={styles.value}>{data.doctors}</div>
-          <div style={{ color: "#64748b", fontSize: "13px", marginTop: "8px" }}>
-            Sample staff count
-          </div>
+          <div style={styles.label}>Occupied Beds</div>
+          <div style={styles.value}>{occupiedBeds}</div>
+          <div style={styles.note}>Currently marked occupied</div>
         </div>
 
         <div style={styles.card}>
-          <div style={styles.label}>Appointments</div>
-          <div style={styles.value}>{data.appointments.toLocaleString()}</div>
-          <div style={{ color: "#64748b", fontSize: "13px", marginTop: "8px" }}>
-            Selected period
-          </div>
+          <div style={styles.label}>Available Beds</div>
+          <div style={styles.value}>{availableBeds}</div>
+          <div style={styles.note}>Currently marked available</div>
         </div>
 
         <div style={styles.card}>
-          <div style={styles.label}>Hospital Staff</div>
-          <div style={styles.value}>{data.staff}</div>
-          <div style={{ color: "#64748b", fontSize: "13px", marginTop: "8px" }}>
-            Sample staff count
-          </div>
+          <div style={styles.label}>Total Staff</div>
+          <div style={styles.value}>{totalStaff}</div>
+          <div style={styles.note}>Current database records</div>
         </div>
       </section>
 
       <section style={styles.grid}>
-        <div style={{ ...styles.card, gridColumn: "span 2" }}>
+        <div style={styles.card}>
           <h2 style={styles.sectionTitle}>Bed Occupancy</h2>
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "baseline",
-              flexWrap: "wrap",
-              gap: "10px",
-            }}
-          >
-            <span style={{ color: "#64748b", fontSize: "14px" }}>
-              Current sample occupancy
-            </span>
-            <strong style={{ fontSize: "25px" }}>{occupancyRate}%</strong>
-          </div>
+          <strong style={{ fontSize: "25px" }}>{occupancyRate}%</strong>
 
           <div style={styles.progressBackground}>
             <div
@@ -210,64 +281,72 @@ const ResourceAnalytics = () => {
                 height: "100%",
                 background: "#2563eb",
                 borderRadius: "20px",
-                transition: "width 0.3s ease",
               }}
             />
           </div>
 
-          <div style={styles.legend}>
-            <span>Occupied: {data.occupiedBeds}</span>
-            <span>Available: {availableBeds}</span>
-            <span>Total: {data.beds}</span>
-          </div>
+          <p style={styles.note}>
+            {occupiedBeds} occupied out of {totalBeds} total beds.
+          </p>
         </div>
 
         <div style={styles.card}>
-          <h2 style={styles.sectionTitle}>Resource Summary</h2>
+          <h2 style={styles.sectionTitle}>Staff Duty Overview</h2>
+          <strong style={{ fontSize: "25px" }}>{staffDutyRate}%</strong>
 
-          <div style={styles.metricRow}>
-            <span>Total Beds</span>
-            <strong>{data.beds}</strong>
+          <div style={styles.progressBackground}>
+            <div
+              style={{
+                width: `${staffDutyRate}%`,
+                height: "100%",
+                background: "#16a34a",
+                borderRadius: "20px",
+              }}
+            />
           </div>
 
           <div style={styles.metricRow}>
-            <span>Occupied Beds</span>
-            <strong>{data.occupiedBeds}</strong>
-          </div>
-
-          <div style={styles.metricRow}>
-            <span>Available Beds</span>
-            <strong>{availableBeds}</strong>
+            <span>On Duty</span>
+            <strong>{onDutyStaff}</strong>
           </div>
 
           <div style={{ ...styles.metricRow, borderBottom: "none" }}>
-            <span>Occupancy Rate</span>
-            <strong>{occupancyRate}%</strong>
+            <span>Off Duty</span>
+            <strong>{offDutyStaff}</strong>
           </div>
         </div>
       </section>
 
       <section style={styles.card}>
-        <h2 style={styles.sectionTitle}>Operational Overview</h2>
+        <h2 style={styles.sectionTitle}>Resource Summary</h2>
 
         <div style={styles.metricRow}>
-          <span>Patient count</span>
-          <strong>{data.patients.toLocaleString()}</strong>
+          <span>Beds added during {period}</span>
+          <strong>{bedsAddedInPeriod}</strong>
         </div>
 
         <div style={styles.metricRow}>
-          <span>Appointments recorded</span>
-          <strong>{data.appointments.toLocaleString()}</strong>
+          <span>Staff added during {period}</span>
+          <strong>{staffAddedInPeriod}</strong>
         </div>
 
-        <div style={{ ...styles.metricRow, borderBottom: "none" }}>
-          <span>Doctors listed</span>
-          <strong>{data.doctors}</strong>
+        <div style={styles.metricRow}>
+          <span>Total beds</span>
+          <strong>{totalBeds}</strong>
+        </div>
+
+        <div style={styles.metricRow}>
+          <span>Total staff</span>
+          <strong>{totalStaff}</strong>
         </div>
 
         <p style={styles.note}>
-          Demonstration data only. Analytics will use the existing backend
-          and database when integration is completed.
+          The period selector filters records by their creation date.
+          Current bed occupancy and staff duty figures always show the
+          latest database status, not historical snapshots.
+          Patient, doctor and appointment statistics are not included
+          because those modules are outside this Admin module's current
+          database integration.
         </p>
       </section>
     </main>
