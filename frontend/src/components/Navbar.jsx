@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 
-function Navbar() {
+function Navbar({ onLogout }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [activeDetails, setActiveDetails] = useState("");
@@ -49,6 +49,7 @@ function Navbar() {
         </div>
 
         <div className="navbar-right">
+          <button type="button" className="logout-button" onClick={onLogout}>Log out</button>
           <div className="notification-wrapper">
             <button
               type="button"

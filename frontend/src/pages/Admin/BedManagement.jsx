@@ -5,7 +5,7 @@ import {
   addBed,
   updateBed,
   deleteBed,
-} from "../../services/api";
+} from "../../services/adminApi";
 
 const initialForm = {
   bedNumber: "",

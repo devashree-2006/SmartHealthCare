@@ -1,5 +1,6 @@
 
 import { useEffect, useState, useCallback } from "react";
+import adminCss from "./admin.css?inline";
 
 import Sidebar from "../../components/Sidebar";
 import Navbar from "../../components/Navbar";
@@ -14,7 +15,7 @@ import ActivityLog from "./ActivityLog";
 import {
   getAdminDashboardStats,
   getBottleneckAlerts,
-} from "../../services/api";
+} from "../../services/adminApi";
 
 const initialStats = {
   beds: {
@@ -29,9 +30,17 @@ const initialStats = {
   },
 };
 
-function AdminDashboard() {
+function AdminDashboard({ onLogout }) {
   const [currentDate, setCurrentDate] = useState("");
   const [activeSection, setActiveSection] = useState("Dashboard");
+
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.dataset.adminStyles = "true";
+    style.textContent = adminCss;
+    document.head.appendChild(style);
+    return () => style.remove();
+  }, []);
 
   const [dashboardStats, setDashboardStats] = useState(initialStats);
   const [alerts, setAlerts] = useState([]);
@@ -191,7 +200,7 @@ function AdminDashboard() {
       />
 
       <main className="admin-main">
-        <Navbar />
+        <Navbar onLogout={onLogout} />
 
         {activeSection === "Dashboard" ? (
           <section className="dashboard-content">

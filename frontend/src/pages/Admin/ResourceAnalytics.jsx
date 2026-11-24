@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from "react";
-import { getBeds, getStaff } from "../../services/api";
+import { getBeds, getStaff } from "../../services/adminApi";
 
 const ResourceAnalytics = () => {
   const [period, setPeriod] = useState("Today");

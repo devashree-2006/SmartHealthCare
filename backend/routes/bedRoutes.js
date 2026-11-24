@@ -1,6 +1,9 @@
 
 const express = require("express");
 const router = express.Router();
+const requireRole = require("../middleware/authMiddleware");
+
+router.use(requireRole("admin"));
 
 const {
   getBeds,

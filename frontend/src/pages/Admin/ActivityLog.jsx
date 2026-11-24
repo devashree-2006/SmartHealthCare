@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from "react";
-import { getActivityLogs } from "../../services/api";
+import { getActivityLogs } from "../../services/adminApi";
 
 const ActivityLog = () => {
   const [activities, setActivities] = useState([]);

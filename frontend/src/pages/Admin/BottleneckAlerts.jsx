@@ -4,7 +4,7 @@ import {
   getBottleneckAlerts,
   createManualAlert,
   deleteManualAlert,
-} from "../../services/api";
+} from "../../services/adminApi";
 
 const BottleneckAlerts = () => {
   const [alerts, setAlerts] = useState([]);

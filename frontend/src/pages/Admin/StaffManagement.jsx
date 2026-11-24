@@ -5,7 +5,7 @@ import {
   addStaff,
   updateStaff,
   deleteStaff,
-} from "../../services/api";
+} from "../../services/adminApi";
 
 const initialForm = {
   staffId: "",
