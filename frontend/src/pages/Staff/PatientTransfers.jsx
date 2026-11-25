@@ -1,45 +1,6 @@
 
-import React, { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { apiRequest } from "../../services/api";
-
-const initialTransfers = [
-  {
-    patient: "Patient P-1024",
-    from: "General Ward",
-    to: "ICU",
-    reason: "Critical monitoring",
-    priority: "High",
-    status: "Pending",
-    time: "09:30 AM"
-  },
-  {
-    patient: "Patient P-1031",
-    from: "Emergency",
-    to: "General Ward",
-    reason: "Condition stabilized",
-    priority: "Medium",
-    status: "In Progress",
-    time: "11:00 AM"
-  },
-  {
-    patient: "Patient P-1045",
-    from: "ICU",
-    to: "Private Ward",
-    reason: "Recovery and observation",
-    priority: "Low",
-    status: "Completed",
-    time: "01:30 PM"
-  },
-  {
-    patient: "Patient P-1052",
-    from: "General Ward",
-    to: "Emergency",
-    reason: "Further medical evaluation",
-    priority: "High",
-    status: "Pending",
-    time: "02:00 PM"
-  }
-];
 
 function PatientTransfers() {
   const [transfers, setTransfers] = useState([]);
@@ -50,8 +11,6 @@ function PatientTransfers() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const initialized = useRef(false);
-
   const [form, setForm] = useState({
     patient: "",
     from: "",
@@ -61,41 +20,22 @@ function PatientTransfers() {
   });
 
   // Load transfers from MongoDB
-  useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-
-    const loadTransfers = async () => {
-      try {
-        setLoading(true);
-        setError("");
-
-        let data = await apiRequest("/staff-transfers");
-
-        // Insert sample transfers if database is empty
-        if (data.length === 0) {
-          const createdTransfers = await Promise.all(
-            initialTransfers.map(transfer =>
-              apiRequest("/staff-transfers", {
-                method: "POST",
-                body: JSON.stringify(transfer)
-              })
-            )
-          );
-
-          data = createdTransfers;
-        }
-
-        setTransfers(data);
-      } catch (err) {
-        setError(err.message || "Unable to load patient transfers.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadTransfers();
+  const loadTransfers = useCallback(async () => {
+    try {
+      const data = await apiRequest("/staff-transfers");
+      setTransfers(data);
+    } catch (err) {
+      setError(err.message || "Unable to load patient transfers.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    // Loading remote records is an external synchronization effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadTransfers();
+  }, [loadTransfers]);
 
   const completed = transfers.filter(
     t => t.status === "Completed"

@@ -1,12 +1,12 @@
 
-import React, { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { apiRequest } from "../../services/api";
 import HandoverTasks from "./HandoverTasks";
 import PatientTransfers from "./PatientTransfers";
 import Attendance from "./Attendance";
 import StaffTasks from "./StaffTasks";
 
-function StaffDashboard({ onLogout }) {
+function StaffDashboard({ onLogout, user }) {
   const [tasks, setTasks] = useState([]);
   const [attendance, setAttendance] = useState(null);
   const [activePage, setActivePage] = useState("Dashboard");
@@ -14,14 +14,8 @@ function StaffDashboard({ onLogout }) {
 
   const today = new Date().toLocaleDateString("en-IN");
 
-  useEffect(() => {
-    loadDashboard();
-  }, []);
-
-  const loadDashboard = async () => {
+  const loadDashboard = useCallback(async () => {
     try {
-      setDashboardLoading(true);
-
       const [taskData, attendanceData] = await Promise.all([
         apiRequest("/staff-tasks"),
         apiRequest("/staff-attendance"),
@@ -44,7 +38,13 @@ function StaffDashboard({ onLogout }) {
     } finally {
       setDashboardLoading(false);
     }
-  };
+  }, [today]);
+
+  useEffect(() => {
+    // Loading remote records is an external synchronization effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadDashboard();
+  }, [loadDashboard]);
 
   const completed = tasks.filter(t => t.done).length;
 
@@ -459,6 +459,7 @@ function StaffDashboard({ onLogout }) {
           <strong>Need assistance?</strong>
           <p>Contact your hospital administrator for support.</p>
         </div>
+        <button type="button" onClick={onLogout}>Log out</button>
       </aside>
 
       <main className="sp-main">
@@ -473,7 +474,7 @@ function StaffDashboard({ onLogout }) {
           <div className="sp-user">
             <div className="sp-avatar">S</div>
             <div>
-              <strong>Hospital Staff</strong>
+              <strong>{user?.name || user?.staffId || "Hospital Staff"}</strong>
               <small>Staff Member</small>
             </div>
           </div>

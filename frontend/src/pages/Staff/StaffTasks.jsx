@@ -1,15 +1,6 @@
 
-import React, { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { apiRequest } from "../../services/api";
-
-const initialTasks = [
-  { title: "Monitor assigned patients", department: "General Ward", priority: "High", status: "Pending", due: "09:00 AM" },
-  { title: "Update patient records", department: "General Ward", priority: "Medium", status: "In Progress", due: "10:30 AM" },
-  { title: "Check medical equipment", department: "ICU", priority: "High", status: "Completed", due: "11:00 AM" },
-  { title: "Assist with patient care", department: "General Ward", priority: "Medium", status: "Pending", due: "01:00 PM" },
-  { title: "Prepare shift handover", department: "General Ward", priority: "High", status: "Pending", due: "03:30 PM" },
-  { title: "Check ward cleanliness", department: "Emergency", priority: "Low", status: "Completed", due: "04:00 PM" },
-];
 
 function StaffTasks() {
   const [tasks, setTasks] = useState([]);
@@ -18,44 +9,23 @@ function StaffTasks() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const initialized = useRef(false);
+  const loadTasks = useCallback(async () => {
+    try {
+      const data = await apiRequest("/staff-tasks");
+      setTasks(data);
+    } catch (err) {
+      setError(err.message || "Unable to load tasks.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   // Load tasks from MongoDB
   useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-
-    const loadTasks = async () => {
-      try {
-        setLoading(true);
-        setError("");
-
-        let data = await apiRequest("/staff-tasks");
-
-        // Insert sample tasks only when the database is empty
-        if (data.length === 0) {
-          const createdTasks = await Promise.all(
-            initialTasks.map(task =>
-              apiRequest("/staff-tasks", {
-                method: "POST",
-                body: JSON.stringify(task),
-              })
-            )
-          );
-
-          data = createdTasks;
-        }
-
-        setTasks(data);
-      } catch (err) {
-        setError(err.message || "Unable to load tasks.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
+    // Loading remote records is an external synchronization effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadTasks();
-  }, []);
+  }, [loadTasks]);
 
   const completed = tasks.filter(
     t => t.status === "Completed"

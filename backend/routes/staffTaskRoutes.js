@@ -9,6 +9,9 @@ const {
 } = require("../controllers/staffTaskController");
 
 const router = express.Router();
+const requireRole = require("../middleware/authMiddleware");
+
+router.use(requireRole("staff", "admin"));
 
 // Get all staff tasks
 router.get("/", getStaffTasks);

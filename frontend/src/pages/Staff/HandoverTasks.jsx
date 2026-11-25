@@ -1,35 +1,5 @@
-import React, { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { apiRequest } from "../../services/api";
-
-const initialHandovers = [
-  {
-    patient: "Patient P-1024",
-    ward: "General Ward",
-    from: "Morning Shift",
-    to: "Evening Shift",
-    condition: "Stable",
-    notes: "Continue regular medication and monitor vital signs.",
-    status: "Pending",
-  },
-  {
-    patient: "Patient P-1031",
-    ward: "ICU",
-    from: "Morning Shift",
-    to: "Evening Shift",
-    condition: "Critical",
-    notes: "Closely monitor oxygen levels and inform doctor about changes.",
-    status: "Pending",
-  },
-  {
-    patient: "Patient P-1045",
-    ward: "Emergency",
-    from: "Night Shift",
-    to: "Morning Shift",
-    condition: "Under Observation",
-    notes: "Review patient condition and update medical records.",
-    status: "Completed",
-  },
-];
 
 function HandoverTasks() {
   const [handovers, setHandovers] = useState([]);
@@ -39,35 +9,22 @@ function HandoverTasks() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    loadHandovers();
-  }, []);
-
-  const loadHandovers = async () => {
+  const loadHandovers = useCallback(async () => {
     try {
-      setLoading(true);
-      setError("");
-
-      let data = await apiRequest("/staff-handovers");
-
-      if (data.length === 0) {
-        for (const handover of initialHandovers) {
-          await apiRequest("/staff-handovers", {
-            method: "POST",
-            body: JSON.stringify(handover),
-          });
-        }
-
-        data = await apiRequest("/staff-handovers");
-      }
-
+      const data = await apiRequest("/staff-handovers");
       setHandovers(data);
     } catch (err) {
       setError(err.message || "Failed to load handovers");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // Loading remote records is an external synchronization effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadHandovers();
+  }, [loadHandovers]);
 
   const completed = handovers.filter(
     h => h.status === "Completed"

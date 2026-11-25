@@ -9,6 +9,9 @@ const {
 } = require("../controllers/staffTransferController");
 
 const router = express.Router();
+const requireRole = require("../middleware/authMiddleware");
+
+router.use(requireRole("staff", "admin"));
 
 // Get all staff transfers
 router.get("/", getStaffTransfers);

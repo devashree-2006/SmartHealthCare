@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { apiRequest } from "../../services/api";
 
 function Attendance() {
@@ -18,15 +18,8 @@ function Attendance() {
 
   const { status, checkIn, checkOut, records } = attendance;
 
-  useEffect(() => {
-    loadAttendance();
-  }, []);
-
-  const loadAttendance = async () => {
+  const loadAttendance = useCallback(async () => {
     try {
-      setLoading(true);
-      setError("");
-
       const data = await apiRequest("/staff-attendance");
 
       const todayRecord = data.find(record => record.date === today);
@@ -51,7 +44,13 @@ function Attendance() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [today]);
+
+  useEffect(() => {
+    // Loading remote records is an external synchronization effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadAttendance();
+  }, [loadAttendance]);
 
   const getTime = () =>
     new Date().toLocaleTimeString("en-IN", {
