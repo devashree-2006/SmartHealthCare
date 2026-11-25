@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   getStaff,
   addStaff,
@@ -9,6 +9,7 @@ import {
 
 const initialForm = {
   staffId: "",
+  password: "",
   name: "",
   role: "Nurse",
   department: "",
@@ -41,6 +42,8 @@ const StaffManagement = () => {
   };
 
   useEffect(() => {
+    // Loading remote records is an external synchronization effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchStaff();
   }, []);
 
@@ -55,6 +58,7 @@ const StaffManagement = () => {
   const handleEdit = (person) => {
     setForm({
       staffId: person.staffId,
+      password: "",
       name: person.name,
       role: person.role,
       department: person.department,
@@ -348,6 +352,21 @@ const StaffManagement = () => {
                   onChange={handleChange}
                   placeholder="Enter staff name"
                   required
+                />
+              </div>
+
+              <div>
+                <label style={styles.formLabel}>{editingId ? "New Password (optional)" : "Sign-in Password"}</label>
+                <input
+                  style={styles.input}
+                  name="password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={form.password}
+                  onChange={handleChange}
+                  placeholder={editingId ? "Leave blank to keep current password" : "At least 8 characters"}
+                  minLength={8}
+                  required={!editingId}
                 />
               </div>
 

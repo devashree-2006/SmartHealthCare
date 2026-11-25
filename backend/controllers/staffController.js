@@ -1,5 +1,6 @@
 
 const Staff = require("../models/Staff");
+const bcrypt = require("bcryptjs");
 const logActivity = require("../utils/logActivity");
 
 // Get all staff
@@ -15,12 +16,15 @@ const getStaff = async (req, res) => {
 // Add new staff
 const addStaff = async (req, res) => {
   try {
-    const { staffId, name, role, department, shift, status } = req.body;
+    const { staffId, name, role, department, shift, status, password } = req.body;
 
-    if (!staffId || !name || !role || !department || !shift) {
+    if (!staffId || !name || !role || !department || !shift || !password) {
       return res.status(400).json({
-        message: "Please provide all required staff details",
+        message: "Please provide all required staff details and a sign-in password",
       });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ message: "Staff passwords must be at least 8 characters." });
     }
 
     const existingStaff = await Staff.findOne({ staffId });
@@ -38,6 +42,7 @@ const addStaff = async (req, res) => {
       department,
       shift,
       status,
+      passwordHash: await bcrypt.hash(password, 12),
     });
 
     await logActivity({
@@ -56,9 +61,17 @@ const addStaff = async (req, res) => {
 // Update staff
 const updateStaff = async (req, res) => {
   try {
+    const { password, ...staffDetails } = req.body;
+    const update = { ...staffDetails };
+    if (password) {
+      if (password.length < 8) {
+        return res.status(400).json({ message: "Staff passwords must be at least 8 characters." });
+      }
+      update.passwordHash = await bcrypt.hash(password, 12);
+    }
     const staff = await Staff.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      update,
       { new: true, runValidators: true }
     );
 

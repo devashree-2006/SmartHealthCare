@@ -10,6 +10,11 @@ const staffSchema = new mongoose.Schema(
       trim: true,
     },
 
+    passwordHash: {
+      type: String,
+      select: false,
+    },
+
     name: {
       type: String,
       required: true,
